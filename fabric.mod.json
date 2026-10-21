@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "yarismod",
+  "version": "${version}",
+  "name": "Yaris Warp Mod",
+  "description": "Bass distortion, extreme FOV up to 240, and utility visual controls.",
+  "authors": ["You"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.example.yarismod.YarisModClient"
+    ]
+  },
+  "mixins": [
+    "yarismod.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.5",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
