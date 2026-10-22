@@ -8,27 +8,43 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.io.File;
 
 public class YarisModClient implements ClientModInitializer {
     public static KeyBinding openGuiKey;
 
+    // Параметры визуалов
     public static double customFov = 70.0;
-    public static double bassIntensity = 1.0;
     public static boolean fulbrightEnabled = false;
-    public static boolean noShakeEnabled = false;
-    public static boolean noEffectsEnabled = false;
+    
+    // Параметры жмыха
+    public static double bassIntensity = 1.0;
+    public static boolean musicPlaying = false;
+    public static int warpTarget = 0; // 0=Все, 1=Игроки, 2=Мобы
 
-    public static Set<String> noRenderList = new HashSet<>();
+    // BlockRemover & BlockAccurated (FastBreak / FastPlace)
+    public static boolean fastPlaceEnabled = false;
+    public static int fastPlaceDelay = 0; // в тиках
+    
+    public static boolean fastBreakEnabled = false;
+    public static int fastBreakDelay = 0; // в тиках
 
     @Override
     public void onInitializeClient() {
+        // Регистрация папки для музыки
+        File mcDir = MinecraftClient.getInstance().runDirectory;
+        File musicDir = new File(mcDir, "yaris_music");
+        if (!musicDir.exists()) {
+            musicDir.mkdirs();
+        }
+
         openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.yarismod.opengui",
                 InputUtil.Type.KEYSYM,
@@ -41,11 +57,19 @@ public class YarisModClient implements ClientModInitializer {
                 client.setScreen(new YarisConfigScreen());
             }
 
-            if (fulbrightEnabled && client.options != null) {
-                client.options.getGamma().setValue(100.0);
+            // Фикс Fullbright (Надежный метод через Night Vision)
+            if (fulbrightEnabled && client.player != null) {
+                if (!client.player.hasStatusEffect(StatusEffects.NIGHT_VISION)) {
+                    client.player.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 4000, 0, false, false, false));
+                }
+            } else if (!fulbrightEnabled && client.player != null) {
+                if (client.player.hasStatusEffect(StatusEffects.NIGHT_VISION)) {
+                    client.player.removeStatusEffect(StatusEffects.NIGHT_VISION);
+                }
             }
         });
 
+        // ESP плашка
         HudRenderCallback.EVENT.register((drawContext, renderTickCounter) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.crosshairTarget != null && client.crosshairTarget.getType() == HitResult.Type.ENTITY) {
@@ -64,11 +88,9 @@ public class YarisModClient implements ClientModInitializer {
         String name = "Name: " + target.getName().getString();
         String hp = String.format("HP: %.1f / %.1f", target.getHealth(), target.getMaxHealth());
         int dist = (int) client.player.distanceTo(target);
-        String distance = "Dist: " + dist + "m";
-
-        context.fill(x - 4, y - 4, x + 110, y + 36, 0x90000000);
+        
+        context.fill(x - 4, y - 4, x + 110, y + 26, 0x90000000);
         context.drawText(client.textRenderer, name, x, y, 0xFFFFFF, true);
         context.drawText(client.textRenderer, hp, x, y + 11, 0xFF5555, true);
-        context.drawText(client.textRenderer, distance, x, y + 22, 0x55FF55, true);
     }
 }
